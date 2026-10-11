@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="tl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#7c3aed"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<title>Bingo Laro 🎉 Tombola</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:linear-gradient(160deg,#7c3aed,#db2777 60%,#f59e0b);min-height:100vh;color:#1e1b4b}
+header{text-align:center;color:#fff;padding:14px 10px 4px}h1{margin:0;font-size:28px;text-shadow:0 2px 0 #0003}header p{margin:2px 0 0;opacity:.9;font-size:13px}
+main{max-width:560px;margin:0 auto;padding:10px}.card{background:#fff;border-radius:18px;padding:12px;margin-bottom:12px;box-shadow:0 6px 18px #0003}
+.call{display:flex;align-items:center;gap:14px}.ball{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#fde047 30%,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:42px;font-weight:900;box-shadow:inset -6px -8px 12px #0002,0 4px 10px #0003;flex:none}
+.ball.pop{animation:pop .5s}@keyframes pop{0%{transform:scale(.3) rotate(-90deg)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.info{flex:1}.last{font-size:13px;color:#6b7280}.last span{display:inline-block;background:#ede9fe;border-radius:99px;padding:2px 7px;margin:2px;font-weight:700;color:#5b21b6}
+.cnt{font-size:13px;color:#6b7280;margin-top:4px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.ctrl button,.ctrl select{flex:1;min-width:90px;padding:12px 6px;font-size:15px;font-weight:700;border:0;border-radius:12px;background:#ede9fe;color:#4c1d95}
+.ctrl button.main{background:#16a34a;color:#fff}.ctrl button.main.paused{background:#f59e0b}
+.opt{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:14px;align-items:center}.opt label{display:flex;align-items:center;gap:5px}input[type=range]{flex:1;min-width:120px}
+.tk{margin-bottom:10px}.tk h3{margin:0 0 6px;font-size:14px;color:#7c3aed}
+.grid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;background:#c4b5fd;padding:3px;border-radius:10px}
+.c{aspect-ratio:1/1.1;display:flex;align-items:center;justify-content:center;background:#f5f3ff;border-radius:6px;font-weight:800;font-size:clamp(13px,4.2vw,20px);user-select:none}
+.c.e{background:#ddd6fe}.c.n{background:#fff;cursor:pointer}.c.m{background:#db2777;color:#fff;transform:scale(.95);border-radius:50%}
+.c.n.called:not(.m){outline:2px dashed #db2777}
+.board{display:grid;grid-template-columns:repeat(10,1fr);gap:2px}.board div{font-size:11px;text-align:center;padding:4px 0;border-radius:4px;background:#f3f4f6;color:#9ca3af}.board div.on{background:#7c3aed;color:#fff;font-weight:700}
+.wins{display:flex;flex-wrap:wrap;gap:6px}.wins span{padding:5px 10px;border-radius:99px;background:#f3f4f6;color:#9ca3af;font-weight:700;font-size:13px}.wins span.got{background:#fef08a;color:#854d0e}
+#toast{position:fixed;left:50%;top:40%;transform:translate(-50%,-50%) scale(0);background:#fff;padding:22px 30px;border-radius:22px;font-size:34px;font-weight:900;color:#db2777;box-shadow:0 10px 40px #0006;transition:transform .3s;text-align:center;z-index:9}
+#toast.show{transform:translate(-50%,-50%) scale(1)}#toast small{display:block;font-size:15px;color:#6b7280}
+details summary{font-weight:700;cursor:pointer;color:#5b21b6}
+</style></head><body>
+<header><h1>🎉 Bingo Laro</h1><p>Tombola 90 · Libre, walang pera · Gratis, senza soldi</p></header>
+<main>
+<div class="card"><div class="call"><div class="ball" id="ball">?</div><div class="info"><b id="say">Pindutin ang ▶ Simula</b><div class="last" id="last"></div><div class="cnt" id="cnt">0 / 90</div></div></div>
+<div class="ctrl"><button class="main" id="play">▶ Simula</button><button id="next">Susunod ➜</button><button id="new">🔄 Bagong laro</button></div>
+<div class="opt"><span>🐢</span><input type="range" id="spd" min="2" max="10" value="5"><span>🐇</span><b id="spdv"></b></div>
+<div class="opt"><label><input type="checkbox" id="voice" checked> 🔊 Boses (Italiano)</label><label><input type="checkbox" id="auto" checked> ✅ Auto-markahan</label>
+<label>Cartelle: <select id="ncards"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label></div></div>
+<div class="card"><div class="wins" id="wins"></div></div>
+<div class="card" id="tickets"></div>
+<div class="card"><details><summary>📋 Lahat ng tinawag (Tabellone)</summary><div class="board" id="board" style="margin-top:8px"></div></details></div>
+</main><div id="toast"></div>
+<script>
+const $=id=>document.getElementById(id),WN=['','','Ambo','Terno','Quaterna','Cinquina'],LV=['Ambo','Terno','Quaterna','Cinquina','Tombola'];
+let G,timer=null;
+const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function colRange(c){return c==0?[1,9]:c==8?[80,90]:[c*10,c*10+9]}
+function makeTicket(){let rows;do{rows=[0,1,2].map(()=>sh([...Array(9).keys()]).slice(0,5))}while([...Array(9).keys()].some(c=>!rows.some(r=>r.includes(c))));
+const g=[0,1,2].map(()=>Array(9).fill(0));for(let c=0;c<9;c++){const rs=[0,1,2].filter(r=>rows[r].includes(c)),[a,b]=colRange(c),pool=sh(Array.from({length:b-a+1},(_,i)=>a+i)).slice(0,rs.length).sort((x,y)=>x-y);rs.forEach((r,i)=>g[r][c]=pool[i])}return g}
+function newGame(){stop();G={bag:sh(Array.from({length:90},(_,i)=>i+1)),called:[],tickets:Array.from({length:+$('ncards').value},makeTicket),marked:new Set(),won:new Set()};$('ball').textContent='?';$('say').textContent='Pindutin ang ▶ Simula';renderTickets();render()}
+function renderTickets(){const T=$('tickets');T.innerHTML='';G.tickets.forEach((g,t)=>{const d=document.createElement('div');d.className='tk';d.innerHTML=`<h3>🎫 Cartella ${t+1}</h3><div class="grid"></div>`;const gr=d.querySelector('.grid');
+g.forEach((row,r)=>row.forEach((n,c)=>{const e=document.createElement('div');e.className='c '+(n?'n':'e');e.id=`c${t}_${r}_${c}`;if(n){e.textContent=n;e.onclick=()=>{if(!G.called.includes(n))return flash('Hindi pa tinawag ang '+n);const k=`${t}_${r}_${c}`;G.marked.has(k)?G.marked.delete(k):G.marked.add(k);check();render()}}gr.appendChild(e)}));T.appendChild(d)})}
+function render(){G.tickets.forEach((g,t)=>g.forEach((row,r)=>row.forEach((n,c)=>{if(!n)return;const e=$(`c${t}_${r}_${c}`);e.classList.toggle('m',G.marked.has(`${t}_${r}_${c}`));e.classList.toggle('called',G.called.includes(n))})));
+$('last').innerHTML='Huling tinawag: '+G.called.slice(-6,-1).reverse().map(n=>`<span>${n}</span>`).join('');$('cnt').textContent=G.called.length+' / 90';
+$('wins').innerHTML=LV.map(l=>`<span class="${G.won.has(l)?'got':''}">${G.won.has(l)?'🏆 ':''}${l}</span>`).join('');
+$('board').innerHTML=Array.from({length:90},(_,i)=>`<div class="${G.called.includes(i+1)?'on':''}">${i+1}</div>`).join('');
+$('play').textContent=timer?'⏸ Pause':(G.called.length?'▶ Ituloy':'▶ Simula');$('play').classList.toggle('paused',!!timer);$('spdv').textContent=$('spd').value+'s'}
+function speak(t){if(!$('voice').checked||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='it-IT';const v=speechSynthesis.getVoices().find(v=>v.lang&&v.lang.startsWith('it'));if(v)u.voice=v;speechSynthesis.speak(u)}
+let tt;function flash(h,s=''){$('toast').innerHTML=h+(s?`<small>${s}</small>`:'');$('toast').classList.add('show');clearTimeout(tt);tt=setTimeout(()=>$('toast').classList.remove('show'),2200)}
+function check(){let best=0,bt=-1,full=-1;G.tickets.forEach((g,t)=>{let tot=0;g.forEach((row,r)=>{const k=row.filter((n,c)=>n&&G.marked.has(`${t}_${r}_${c}`)).length;tot+=k;if(k>best){best=k;bt=t}});if(tot==15)full=t});
+const news=[];for(let k=2;k<=Math.min(best,5);k++)if(!G.won.has(WN[k])){G.won.add(WN[k]);news.push(WN[k])}
+if(full>=0&&!G.won.has('Tombola')){G.won.add('Tombola');news.push('Tombola');stop()}
+if(news.length){const w=news[news.length-1],t=w=='Tombola'?full:bt;flash((w=='Tombola'?'🎊 ':'🎉 ')+w+'!','Cartella '+(t+1)+(w=='Tombola'?' · Panalo ka!':''));setTimeout(()=>speak(w+'!'),900)}}
+function draw(){if(!G.bag.length){stop();return flash('Tapos na!','Lahat ng 90 ay tinawag')}const n=G.bag.pop();G.called.push(n);const b=$('ball');b.textContent=n;b.classList.remove('pop');void b.offsetWidth;b.classList.add('pop');$('say').textContent='Numero '+n;speak(String(n));
+if($('auto').checked)G.tickets.forEach((g,t)=>g.forEach((row,r)=>row.forEach((x,c)=>{if(x==n)G.marked.add(`${t}_${r}_${c}`)})));check();render()}
+function start(){if(G.won.has('Tombola'))return;timer=setInterval(draw,$('spd').value*1000);draw()}
+function stop(){clearInterval(timer);timer=null;if(G)render()}
+$('play').onclick=()=>timer?stop():start();$('next').onclick=()=>{if(!G.won.has('Tombola'))draw()};$('new').onclick=()=>{if(!G.called.length||confirm('Magsimula ng bagong laro?'))newGame()};
+$('spd').oninput=()=>{if(timer){clearInterval(timer);timer=setInterval(draw,$('spd').value*1000)}render()};$('ncards').onchange=newGame;
+newGame();
+</script></body></html>
